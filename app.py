@@ -677,4 +677,4 @@ elif st.session_state.paso == "99":
 
 # Footer
 st.markdown("---")
-st.caption("Formulario de Entrega de Turno - Aseguramiento | Gopass")
+st.caption("Formulario de Entrega de Turno - Aseguramiento | Gopass | Created by Angel Torres")
