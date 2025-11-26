@@ -26,15 +26,55 @@ if 'novedades' not in st.session_state:
     st.session_state.novedades = ""
 if 'tiene_pendientes' not in st.session_state:
     st.session_state.tiene_pendientes = "No"
+if 'actividad_actual_index' not in st.session_state:
+    st.session_state.actividad_actual_index = 0
+if 'datos_guardados' not in st.session_state:
+    st.session_state.datos_guardados = []
 
 # Función para guardar en Excel
 def guardar_datos(datos):
     try:
+        # Agregar a la lista de datos guardados
+        st.session_state.datos_guardados.append(datos)
+        return True
+    except Exception as e:
+        st.error(f"❌ Error: {str(e)}")
+        return False
+
+# Función para ir a la siguiente actividad o finalizar
+def ir_siguiente_actividad():
+    st.session_state.actividad_actual_index += 1
+    
+    # Limpiar datos de la actividad anterior
+    st.session_state.categorias_seleccionadas = []
+    st.session_state.tickets_por_categoria = {}
+    st.session_state.escalados = ""
+    st.session_state.novedades = ""
+    st.session_state.tiene_pendientes = "No"
+    
+    if st.session_state.actividad_actual_index < len(st.session_state.actividades):
+        # Hay más actividades, ir a la siguiente
+        siguiente_actividad = st.session_state.actividades[st.session_state.actividad_actual_index]
+        if siguiente_actividad == "Tickets GLPI":
+            st.session_state.paso = 3
+        elif siguiente_actividad == "Correo de Concesiones":
+            st.session_state.paso = 4
+        elif siguiente_actividad == "Análisis del día":
+            st.session_state.paso = 5
+    else:
+        # No hay más actividades, guardar todo
+        st.session_state.paso = 99
+    
+    st.rerun()
+
+# Función para exportar todos los datos
+def exportar_todo():
+    try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
         
-        df_nuevo = pd.DataFrame([datos])
-        df_nuevo.to_excel(nombre_archivo, index=False)
+        df_completo = pd.DataFrame(st.session_state.datos_guardados)
+        df_completo.to_excel(nombre_archivo, index=False)
         
         st.success("✅ Datos guardados exitosamente")
         st.download_button(
@@ -91,12 +131,14 @@ elif st.session_state.paso == 2:
                 st.error("⚠️ Selecciona al menos una actividad")
             else:
                 st.session_state.actividades = actividades
-                # Determinar a qué paso ir según la primera actividad
-                if "Tickets GLPI" in actividades:
+                st.session_state.actividad_actual_index = 0
+                # Ir a la primera actividad seleccionada
+                primera_actividad = actividades[0]
+                if primera_actividad == "Tickets GLPI":
                     st.session_state.paso = 3
-                elif "Correo de Concesiones" in actividades:
+                elif primera_actividad == "Correo de Concesiones":
                     st.session_state.paso = 4
-                elif "Análisis del día" in actividades:
+                elif primera_actividad == "Análisis del día":
                     st.session_state.paso = 5
                 st.rerun()
 
@@ -288,17 +330,7 @@ elif st.session_state.paso == 3.4:
                     datos[f"Tickets - {cat}"] = num
                 
                 if guardar_datos(datos):
-                    st.balloons()
-                    if st.button("✅ Hacer otro envío"):
-                        st.session_state.paso = 1
-                        st.session_state.nombre = ""
-                        st.session_state.actividades = []
-                        st.session_state.categorias_seleccionadas = []
-                        st.session_state.tickets_por_categoria = {}
-                        st.session_state.escalados = ""
-                        st.session_state.novedades = ""
-                        st.session_state.tiene_pendientes = "No"
-                        st.rerun()
+                    ir_siguiente_actividad()
 
 # PASO 3.5: TICKETS GLPI - Envío final (sin pendientes)
 elif st.session_state.paso == 3.5:
@@ -316,17 +348,7 @@ elif st.session_state.paso == 3.5:
         datos[f"Tickets - {cat}"] = num
     
     if guardar_datos(datos):
-        st.balloons()
-        if st.button("✅ Hacer otro envío"):
-            st.session_state.paso = 1
-            st.session_state.nombre = ""
-            st.session_state.actividades = []
-            st.session_state.categorias_seleccionadas = []
-            st.session_state.tickets_por_categoria = {}
-            st.session_state.escalados = ""
-            st.session_state.novedades = ""
-            st.session_state.tiene_pendientes = "No"
-            st.rerun()
+        ir_siguiente_actividad()
 
 # PASO 4: Formulario CORREO DE CONCESIONES
 elif st.session_state.paso == 4:
@@ -394,12 +416,7 @@ elif st.session_state.paso == 4:
                 datos[f"Correos - {conc}"] = num
             
             if guardar_datos(datos):
-                st.balloons()
-                if st.button("✅ Hacer otro envío"):
-                    st.session_state.paso = 1
-                    st.session_state.nombre = ""
-                    st.session_state.actividades = []
-                    st.rerun()
+                ir_siguiente_actividad()
 
 # PASO 5: Formulario ANÁLISIS DEL DÍA
 elif st.session_state.paso == 5:
@@ -433,12 +450,28 @@ elif st.session_state.paso == 5:
                 }
                 
                 if guardar_datos(datos):
-                    st.balloons()
-                    if st.button("✅ Hacer otro envío"):
-                        st.session_state.paso = 1
-                        st.session_state.nombre = ""
-                        st.session_state.actividades = []
-                        st.rerun()
+                    ir_siguiente_actividad()
+
+# PASO 99: Finalización y exportación
+elif st.session_state.paso == 99:
+    st.success("✅ ¡Todas las actividades completadas!")
+    st.info(f"👤 **{st.session_state.nombre}** completó: {', '.join(st.session_state.actividades)}")
+    
+    if exportar_todo():
+        st.balloons()
+        
+        if st.button("🔄 Hacer otro envío", use_container_width=True):
+            st.session_state.paso = 1
+            st.session_state.nombre = ""
+            st.session_state.actividades = []
+            st.session_state.actividad_actual_index = 0
+            st.session_state.datos_guardados = []
+            st.session_state.categorias_seleccionadas = []
+            st.session_state.tickets_por_categoria = {}
+            st.session_state.escalados = ""
+            st.session_state.novedades = ""
+            st.session_state.tiene_pendientes = "No"
+            st.rerun()
 
 # Footer
 st.markdown("---")
