@@ -93,12 +93,14 @@ def exportar_todo():
         )
         
         # Descargar el archivo existente
-        response = ctx.web.get_file_by_server_relative_url(file_url).download()
+        download_path = BytesIO()
+        file = ctx.web.get_file_by_server_relative_url(file_url)
+        file.download(download_path)
         ctx.execute_query()
         
         # Leer el Excel existente
-        bytes_file = BytesIO(response.content)
-        df_existente = pd.read_excel(bytes_file)
+        download_path.seek(0)
+        df_existente = pd.read_excel(download_path)
         
         # Crear DataFrame con los nuevos datos
         df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
@@ -113,8 +115,7 @@ def exportar_todo():
         output.seek(0)
         
         # Subir el archivo actualizado a SharePoint
-        file = ctx.web.get_file_by_server_relative_url(file_url)
-        file.save_binary(output.getvalue())
+        file.upload(output.getvalue())
         ctx.execute_query()
         
         st.success("✅ Datos guardados exitosamente en SharePoint")
@@ -123,6 +124,7 @@ def exportar_todo():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
         
+        output.seek(0)
         st.download_button(
             label="📥 Descargar respaldo local",
             data=output.getvalue(),
