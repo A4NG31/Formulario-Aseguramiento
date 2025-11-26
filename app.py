@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.user_credential import UserCredential
 from io import BytesIO
-import openpyxl
+import requests
+import json
+import base64
 
 # Configuración de la página
 st.set_page_config(page_title="Entrega de Turno", layout="centered")
@@ -76,66 +76,106 @@ def ir_siguiente_actividad():
     
     st.rerun()
 
-# Función para exportar
+# Función para exportar a GitHub
 def exportar_todo():
     try:
-        # Obtener credenciales de Streamlit secrets
-        username = st.secrets["sharepoint"]["username"]
-        password = st.secrets["sharepoint"]["password"]
-        site_url = st.secrets["sharepoint"]["site_url"]
+        # Obtener configuración de GitHub desde secrets
+        github_token = st.secrets["github"]["token"]
+        repo_owner = st.secrets["github"]["repo_owner"]
+        repo_name = st.secrets["github"]["repo_name"]
+        file_path = st.secrets["github"]["file_path"]
         
-        # Ruta del archivo en SharePoint
-        file_url = "/personal/diego_sierra_gopass_com_co/Documents/Book.xlsx"
+        # URL de la API de GitHub
+        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_path}"
         
-        # Conectar a SharePoint
-        ctx = ClientContext(site_url).with_credentials(
-            UserCredential(username, password)
-        )
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
         
-        # Descargar el archivo existente
-        download_path = BytesIO()
-        file = ctx.web.get_file_by_server_relative_url(file_url)
-        file.download(download_path)
-        ctx.execute_query()
+        # Intentar obtener el archivo existente
+        response = requests.get(api_url, headers=headers)
         
-        # Leer el Excel existente
-        download_path.seek(0)
-        df_existente = pd.read_excel(download_path)
+        if response.status_code == 200:
+            # Archivo existe, descargar y agregar datos
+            file_data = response.json()
+            file_sha = file_data["sha"]
+            
+            # Decodificar contenido existente
+            existing_content = base64.b64decode(file_data["content"])
+            existing_df = pd.read_excel(BytesIO(existing_content))
+            
+            # Agregar nuevos datos
+            df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
+            df_completo = pd.concat([existing_df, df_nuevos], ignore_index=True)
+            
+        elif response.status_code == 404:
+            # Archivo no existe, crear nuevo
+            file_sha = None
+            df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
+            df_completo = df_nuevos
+            
+        else:
+            raise Exception(f"Error al acceder a GitHub: {response.status_code} - {response.text}")
         
-        # Crear DataFrame con los nuevos datos
-        df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
-        
-        # Combinar datos existentes con nuevos
-        df_completo = pd.concat([df_existente, df_nuevos], ignore_index=True)
-        
-        # Guardar en un buffer
+        # Guardar DataFrame en buffer
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df_completo.to_excel(writer, index=False, sheet_name='Sheet1')
+            df_completo.to_excel(writer, index=False, sheet_name='Entregas')
         output.seek(0)
         
-        # Subir el archivo actualizado a SharePoint
-        file.upload(output.getvalue())
-        ctx.execute_query()
+        # Codificar en base64 para GitHub
+        content_base64 = base64.b64encode(output.read()).decode('utf-8')
         
-        st.success("✅ Datos guardados exitosamente en SharePoint")
+        # Preparar payload para GitHub
+        commit_message = f"Actualización de entregas - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         
-        # También ofrecer descarga local
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
+        payload = {
+            "message": commit_message,
+            "content": content_base64,
+        }
         
-        output.seek(0)
-        st.download_button(
-            label="📥 Descargar respaldo local",
-            data=output.getvalue(),
-            file_name=nombre_archivo,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        if file_sha:
+            payload["sha"] = file_sha
         
-        return True
+        # Subir archivo a GitHub
+        upload_response = requests.put(api_url, headers=headers, json=payload)
+        
+        if upload_response.status_code in [200, 201]:
+            st.success("✅ Datos guardados exitosamente en GitHub")
+            
+            # Mostrar link al archivo
+            file_url = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{file_path}"
+            st.markdown(f"🔗 [Ver archivo en GitHub]({file_url})")
+            
+            # Ofrecer descarga local también
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
+            
+            output.seek(0)
+            st.download_button(
+                label="📥 Descargar copia local",
+                data=output.getvalue(),
+                file_name=nombre_archivo,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+            
+            # Mostrar resumen
+            st.markdown("### 📊 Resumen de datos guardados:")
+            st.dataframe(df_nuevos, use_container_width=True)
+            
+            return True
+        else:
+            raise Exception(f"Error al subir archivo: {upload_response.status_code} - {upload_response.text}")
+        
+    except KeyError as e:
+        st.error(f"❌ Error de configuración: Falta {str(e)} en secrets")
+        st.info("⚙️ Configura los secrets de GitHub en Streamlit Cloud")
+        return False
         
     except Exception as e:
-        st.error(f"❌ Error al guardar en SharePoint: {str(e)}")
+        st.error(f"❌ Error al guardar en GitHub: {str(e)}")
         
         # Fallback: guardar localmente
         try:
@@ -145,15 +185,16 @@ def exportar_todo():
             df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df_nuevos.to_excel(writer, index=False, sheet_name='Sheet1')
+                df_nuevos.to_excel(writer, index=False, sheet_name='Entregas')
             output.seek(0)
             
-            st.warning("⚠️ Guardando localmente por error de conexión")
+            st.warning("⚠️ Guardando localmente por error de conexión con GitHub")
             st.download_button(
                 label="📥 Descargar respaldo local",
                 data=output.getvalue(),
                 file_name=nombre_archivo,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
             )
             return True
         except Exception as e2:
