@@ -6,6 +6,17 @@ import requests
 import json
 import base64
 
+
+st.set_page_config(page_title="Cambio de Turno", page_icon="📋", layout="wide")
+
+# Logo de GoPass con contenedor estilizado
+st.markdown("""
+<div class="logo-container">
+    <img src="https://i.imgur.com/z9xt46F.jpeg"
+         style="width: 60%; border-radius: 10px; display: block; margin: 0 auto;" 
+         alt="Logo Gopass">
+</div>
+""", unsafe_allow_html=True)
 # Configuración de la página
 st.set_page_config(page_title="Entrega de Turno", layout="centered")
 
