@@ -30,6 +30,12 @@ if 'actividad_actual_index' not in st.session_state:
     st.session_state.actividad_actual_index = 0
 if 'datos_guardados' not in st.session_state:
     st.session_state.datos_guardados = []
+if 'concesiones_seleccionadas' not in st.session_state:
+    st.session_state.concesiones_seleccionadas = []
+if 'correos_por_concesion' not in st.session_state:
+    st.session_state.correos_por_concesion = {}
+if 'tiene_novedades_conc' not in st.session_state:
+    st.session_state.tiene_novedades_conc = "No"
 
 # Función para guardar en Excel
 def guardar_datos(datos):
@@ -51,6 +57,9 @@ def ir_siguiente_actividad():
     st.session_state.escalados = ""
     st.session_state.novedades = ""
     st.session_state.tiene_pendientes = "No"
+    st.session_state.concesiones_seleccionadas = []
+    st.session_state.correos_por_concesion = {}
+    st.session_state.tiene_novedades_conc = "No"
     
     if st.session_state.actividad_actual_index < len(st.session_state.actividades):
         # Hay más actividades, ir a la siguiente
