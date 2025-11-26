@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os
 
 # Configuración de la página
 st.set_page_config(page_title="Entrega de Turno", layout="centered")
@@ -11,7 +10,7 @@ st.title("📋 Plantilla de Informe de Entrega de Cambio de Turno")
 
 # Inicializar session state
 if 'paso' not in st.session_state:
-    st.session_state.paso = 1
+    st.session_state.paso = "1"
 if 'nombre' not in st.session_state:
     st.session_state.nombre = ""
 if 'actividades' not in st.session_state:
@@ -37,17 +36,16 @@ if 'correos_por_concesion' not in st.session_state:
 if 'tiene_novedades_conc' not in st.session_state:
     st.session_state.tiene_novedades_conc = "No"
 
-# Función para guardar en Excel
+# Función para guardar datos
 def guardar_datos(datos):
     try:
-        # Agregar a la lista de datos guardados
         st.session_state.datos_guardados.append(datos)
         return True
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
         return False
 
-# Función para ir a la siguiente actividad o finalizar
+# Función para ir a la siguiente actividad
 def ir_siguiente_actividad():
     st.session_state.actividad_actual_index += 1
     
@@ -62,21 +60,19 @@ def ir_siguiente_actividad():
     st.session_state.tiene_novedades_conc = "No"
     
     if st.session_state.actividad_actual_index < len(st.session_state.actividades):
-        # Hay más actividades, ir a la siguiente
         siguiente_actividad = st.session_state.actividades[st.session_state.actividad_actual_index]
         if siguiente_actividad == "Tickets GLPI":
-            st.session_state.paso = 3
+            st.session_state.paso = "3"
         elif siguiente_actividad == "Correo de Concesiones":
-            st.session_state.paso = 4
+            st.session_state.paso = "4"
         elif siguiente_actividad == "Análisis del día":
-            st.session_state.paso = 5
+            st.session_state.paso = "5"
     else:
-        # No hay más actividades, guardar todo
-        st.session_state.paso = 99
+        st.session_state.paso = "99"
     
     st.rerun()
 
-# Función para exportar todos los datos
+# Función para exportar
 def exportar_todo():
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -98,7 +94,7 @@ def exportar_todo():
         return False
 
 # PASO 1: Selección de nombre
-if st.session_state.paso == 1:
+if st.session_state.paso == "1":
     with st.form("form_nombre"):
         nombre = st.selectbox(
             "Seleccione su nombre *",
@@ -112,11 +108,11 @@ if st.session_state.paso == 1:
                 st.error("⚠️ Por favor selecciona tu nombre")
             else:
                 st.session_state.nombre = nombre
-                st.session_state.paso = 2
+                st.session_state.paso = "2"
                 st.rerun()
 
 # PASO 2: Selección de actividades
-elif st.session_state.paso == 2:
+elif st.session_state.paso == "2":
     st.info(f"👤 Usuario: **{st.session_state.nombre}**")
     
     with st.form("form_actividades"):
@@ -132,7 +128,7 @@ elif st.session_state.paso == 2:
             siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 1
+            st.session_state.paso = "1"
             st.rerun()
         
         if siguiente:
@@ -141,18 +137,18 @@ elif st.session_state.paso == 2:
             else:
                 st.session_state.actividades = actividades
                 st.session_state.actividad_actual_index = 0
-                # Ir a la primera actividad seleccionada
                 primera_actividad = actividades[0]
                 if primera_actividad == "Tickets GLPI":
-                    st.session_state.paso = 3
+                    st.session_state.paso = "3"
                 elif primera_actividad == "Correo de Concesiones":
-                    st.session_state.paso = 4
+                    st.session_state.paso = "4"
                 elif primera_actividad == "Análisis del día":
-                    st.session_state.paso = 5
+                    st.session_state.paso = "5"
                 st.rerun()
 
-# PASO 3: TICKETS GLPI - Selección de categorías
-elif st.session_state.paso == 3:
+# ========== TICKETS GLPI ==========
+# PASO 3: Selección de categorías
+elif st.session_state.paso == "3":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     categorias_opciones = [
@@ -197,7 +193,7 @@ elif st.session_state.paso == 3:
             siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 2
+            st.session_state.paso = "2"
             st.rerun()
         
         if siguiente:
@@ -205,11 +201,11 @@ elif st.session_state.paso == 3:
                 st.error("⚠️ Selecciona al menos una categoría")
             else:
                 st.session_state.categorias_seleccionadas = categorias
-                st.session_state.paso = 3.1
+                st.session_state.paso = "3.1"
                 st.rerun()
 
-# PASO 3.1: TICKETS GLPI - Número de tickets por categoría
-elif st.session_state.paso == 3.1:
+# PASO 3.1: Número de tickets por categoría
+elif st.session_state.paso == "3.1":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_num_tickets"):
@@ -232,16 +228,16 @@ elif st.session_state.paso == 3.1:
             siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 3
+            st.session_state.paso = "3"
             st.rerun()
         
         if siguiente:
             st.session_state.tickets_por_categoria = tickets_dict
-            st.session_state.paso = 3.2
+            st.session_state.paso = "3.2"
             st.rerun()
 
-# PASO 3.2: TICKETS GLPI - Escalados y novedades
-elif st.session_state.paso == 3.2:
+# PASO 3.2: Escalados y novedades
+elif st.session_state.paso == "3.2":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_escalados"):
@@ -263,17 +259,17 @@ elif st.session_state.paso == 3.2:
             siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 3.1
+            st.session_state.paso = "3.1"
             st.rerun()
         
         if siguiente:
             st.session_state.escalados = escalados
             st.session_state.novedades = novedades
-            st.session_state.paso = 3.3
+            st.session_state.paso = "3.3"
             st.rerun()
 
-# PASO 3.3: TICKETS GLPI - Pendientes
-elif st.session_state.paso == 3.3:
+# PASO 3.3: Pendientes
+elif st.session_state.paso == "3.3":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_pendientes"):
@@ -290,19 +286,19 @@ elif st.session_state.paso == 3.3:
             siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 3.2
+            st.session_state.paso = "3.2"
             st.rerun()
         
         if siguiente:
             st.session_state.tiene_pendientes = pendientes
             if pendientes == "Sí":
-                st.session_state.paso = 3.4
+                st.session_state.paso = "3.4"
             else:
-                st.session_state.paso = 3.5
+                st.session_state.paso = "3.5"
             st.rerun()
 
-# PASO 3.4: TICKETS GLPI - Descripción de pendientes
-elif st.session_state.paso == 3.4:
+# PASO 3.4: Descripción de pendientes
+elif st.session_state.paso == "3.4":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_desc_pendientes"):
@@ -318,7 +314,7 @@ elif st.session_state.paso == 3.4:
             enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 3.3
+            st.session_state.paso = "3.3"
             st.rerun()
         
         if enviar:
@@ -341,8 +337,8 @@ elif st.session_state.paso == 3.4:
                 if guardar_datos(datos):
                     ir_siguiente_actividad()
 
-# PASO 3.5: TICKETS GLPI - Envío final (sin pendientes)
-elif st.session_state.paso == 3.5:
+# PASO 3.5: Envío final (sin pendientes)
+elif st.session_state.paso == "3.5":
     datos = {
         "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "Nombre": st.session_state.nombre,
@@ -359,8 +355,9 @@ elif st.session_state.paso == 3.5:
     if guardar_datos(datos):
         ir_siguiente_actividad()
 
-# PASO 4: Formulario CORREO DE CONCESIONES
-elif st.session_state.paso == 4:
+# ========== CORREO DE CONCESIONES ==========
+# PASO 4: Selección de concesiones
+elif st.session_state.paso == "4":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
     
     concesiones_opciones = [
@@ -370,36 +367,101 @@ elif st.session_state.paso == 4:
         "Aut. El Cafe"
     ]
     
-    with st.form("form_concesiones"):
+    with st.form("form_concesiones_select"):
         concesiones = st.multiselect(
             "¿Qué concesiones trabajaste?",
-            concesiones_opciones
+            concesiones_opciones,
+            default=st.session_state.concesiones_seleccionadas
         )
         
-        correos_por_concesion = {}
-        if concesiones:
-            st.markdown("**Número de correos respondidos por concesión:**")
-            for conc in concesiones:
-                correos_por_concesion[conc] = st.number_input(
-                    conc,
-                    min_value=0,
-                    value=0,
-                    step=1,
-                    key=f"correo_{conc}"
-                )
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
         
-        st.markdown("---")
+        if atras:
+            st.session_state.paso = "2"
+            st.rerun()
+        
+        if siguiente:
+            if not concesiones:
+                st.error("⚠️ Selecciona al menos una concesión")
+            else:
+                st.session_state.concesiones_seleccionadas = concesiones
+                st.session_state.paso = "4.1"
+                st.rerun()
+
+# PASO 4.1: Número de correos por concesión
+elif st.session_state.paso == "4.1":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
+    
+    with st.form("form_num_correos"):
+        st.markdown("**Número de correos respondidos por concesión:**")
+        correos_dict = {}
+        for conc in st.session_state.concesiones_seleccionadas:
+            valor_default = st.session_state.correos_por_concesion.get(conc, 0)
+            correos_dict[conc] = st.number_input(
+                conc,
+                min_value=0,
+                value=valor_default,
+                step=1,
+                key=f"correo_{conc}"
+            )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "4"
+            st.rerun()
+        
+        if siguiente:
+            st.session_state.correos_por_concesion = correos_dict
+            st.session_state.paso = "4.2"
+            st.rerun()
+
+# PASO 4.2: ¿Tuviste novedades?
+elif st.session_state.paso == "4.2":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
+    
+    with st.form("form_novedades_conc"):
         tuvo_novedades = st.radio(
             "¿Tuviste novedades?",
-            ["No", "Sí"]
+            ["No", "Sí"],
+            index=0 if st.session_state.tiene_novedades_conc == "No" else 1
         )
         
-        desc_novedades = ""
-        if tuvo_novedades == "Sí":
-            desc_novedades = st.text_area(
-                "Describe la novedad:",
-                height=100
-            )
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "4.1"
+            st.rerun()
+        
+        if siguiente:
+            st.session_state.tiene_novedades_conc = tuvo_novedades
+            if tuvo_novedades == "Sí":
+                st.session_state.paso = "4.3"
+            else:
+                st.session_state.paso = "4.4"
+            st.rerun()
+
+# PASO 4.3: Descripción de novedades
+elif st.session_state.paso == "4.3":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
+    
+    with st.form("form_desc_novedades_conc"):
+        desc_novedades = st.text_area(
+            "¿Qué novedades tuviste?",
+            height=150
+        )
         
         col1, col2 = st.columns(2)
         with col1:
@@ -408,27 +470,46 @@ elif st.session_state.paso == 4:
             enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 2
+            st.session_state.paso = "4.2"
             st.rerun()
         
         if enviar:
-            datos = {
-                "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Nombre": st.session_state.nombre,
-                "Actividad": "Correo de Concesiones",
-                "Concesiones": ", ".join(concesiones) if concesiones else "N/A",
-                "Novedades": desc_novedades if tuvo_novedades == "Sí" else "No"
-            }
-            
-            # Agregar correos por concesión
-            for conc, num in correos_por_concesion.items():
-                datos[f"Correos - {conc}"] = num
-            
-            if guardar_datos(datos):
-                ir_siguiente_actividad()
+            if not desc_novedades.strip():
+                st.error("⚠️ Por favor describe las novedades")
+            else:
+                datos = {
+                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Nombre": st.session_state.nombre,
+                    "Actividad": "Correo de Concesiones",
+                    "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
+                    "Novedades": desc_novedades
+                }
+                
+                for conc, num in st.session_state.correos_por_concesion.items():
+                    datos[f"Correos - {conc}"] = num
+                
+                if guardar_datos(datos):
+                    ir_siguiente_actividad()
 
-# PASO 5: Formulario ANÁLISIS DEL DÍA
-elif st.session_state.paso == 5:
+# PASO 4.4: Envío final (sin novedades)
+elif st.session_state.paso == "4.4":
+    datos = {
+        "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Nombre": st.session_state.nombre,
+        "Actividad": "Correo de Concesiones",
+        "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
+        "Novedades": "No"
+    }
+    
+    for conc, num in st.session_state.correos_por_concesion.items():
+        datos[f"Correos - {conc}"] = num
+    
+    if guardar_datos(datos):
+        ir_siguiente_actividad()
+
+# ========== ANÁLISIS DEL DÍA ==========
+# PASO 5: Análisis del día
+elif st.session_state.paso == "5":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📊 Análisis del Día")
     
     with st.form("form_analisis"):
@@ -444,7 +525,7 @@ elif st.session_state.paso == 5:
             enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
         
         if atras:
-            st.session_state.paso = 2
+            st.session_state.paso = "2"
             st.rerun()
         
         if enviar:
@@ -461,8 +542,9 @@ elif st.session_state.paso == 5:
                 if guardar_datos(datos):
                     ir_siguiente_actividad()
 
-# PASO 99: Finalización y exportación
-elif st.session_state.paso == 99:
+# ========== FINALIZACIÓN ==========
+# PASO 99: Exportación final
+elif st.session_state.paso == "99":
     st.success("✅ ¡Todas las actividades completadas!")
     st.info(f"👤 **{st.session_state.nombre}** completó: {', '.join(st.session_state.actividades)}")
     
@@ -470,7 +552,7 @@ elif st.session_state.paso == 99:
         st.balloons()
         
         if st.button("🔄 Hacer otro envío", use_container_width=True):
-            st.session_state.paso = 1
+            st.session_state.paso = "1"
             st.session_state.nombre = ""
             st.session_state.actividades = []
             st.session_state.actividad_actual_index = 0
@@ -480,6 +562,9 @@ elif st.session_state.paso == 99:
             st.session_state.escalados = ""
             st.session_state.novedades = ""
             st.session_state.tiene_pendientes = "No"
+            st.session_state.concesiones_seleccionadas = []
+            st.session_state.correos_por_concesion = {}
+            st.session_state.tiene_novedades_conc = "No"
             st.rerun()
 
 # Footer
