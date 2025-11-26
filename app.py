@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from office365.sharepoint.client_context import ClientContext
+from office365.runtime.auth.user_credential import UserCredential
+from io import BytesIO
+import openpyxl
 
 # Configuración de la página
 st.set_page_config(page_title="Entrega de Turno", layout="centered")
@@ -75,23 +79,84 @@ def ir_siguiente_actividad():
 # Función para exportar
 def exportar_todo():
     try:
+        # Obtener credenciales de Streamlit secrets
+        username = st.secrets["sharepoint"]["username"]
+        password = st.secrets["sharepoint"]["password"]
+        site_url = st.secrets["sharepoint"]["site_url"]
+        
+        # Ruta del archivo en SharePoint
+        file_url = "/personal/diego_sierra_gopass_com_co/Documents/Book.xlsx"
+        
+        # Conectar a SharePoint
+        ctx = ClientContext(site_url).with_credentials(
+            UserCredential(username, password)
+        )
+        
+        # Descargar el archivo existente
+        response = ctx.web.get_file_by_server_relative_url(file_url).download()
+        ctx.execute_query()
+        
+        # Leer el Excel existente
+        bytes_file = BytesIO(response.content)
+        df_existente = pd.read_excel(bytes_file)
+        
+        # Crear DataFrame con los nuevos datos
+        df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
+        
+        # Combinar datos existentes con nuevos
+        df_completo = pd.concat([df_existente, df_nuevos], ignore_index=True)
+        
+        # Guardar en un buffer
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df_completo.to_excel(writer, index=False, sheet_name='Sheet1')
+        output.seek(0)
+        
+        # Subir el archivo actualizado a SharePoint
+        file = ctx.web.get_file_by_server_relative_url(file_url)
+        file.save_binary(output.getvalue())
+        ctx.execute_query()
+        
+        st.success("✅ Datos guardados exitosamente en SharePoint")
+        
+        # También ofrecer descarga local
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
         
-        df_completo = pd.DataFrame(st.session_state.datos_guardados)
-        df_completo.to_excel(nombre_archivo, index=False)
-        
-        st.success("✅ Datos guardados exitosamente")
         st.download_button(
-            label="📥 Descargar respaldo",
-            data=open(nombre_archivo, 'rb'),
+            label="📥 Descargar respaldo local",
+            data=output.getvalue(),
             file_name=nombre_archivo,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        
         return True
+        
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
-        return False
+        st.error(f"❌ Error al guardar en SharePoint: {str(e)}")
+        
+        # Fallback: guardar localmente
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
+            
+            df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_nuevos.to_excel(writer, index=False, sheet_name='Sheet1')
+            output.seek(0)
+            
+            st.warning("⚠️ Guardando localmente por error de conexión")
+            st.download_button(
+                label="📥 Descargar respaldo local",
+                data=output.getvalue(),
+                file_name=nombre_archivo,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            return True
+        except Exception as e2:
+            st.error(f"❌ Error al guardar localmente: {str(e2)}")
+            return False
 
 # PASO 1: Selección de nombre
 if st.session_state.paso == "1":
