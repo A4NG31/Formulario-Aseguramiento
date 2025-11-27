@@ -6,7 +6,7 @@ import requests
 import json
 import base64
 
-
+# Configuración de la página (debe ir al principio)
 st.set_page_config(page_title="Cambio de Turno", page_icon="📋", layout="wide")
 
 # Logo de GoPass con contenedor estilizado
@@ -17,11 +17,73 @@ st.markdown("""
          alt="Logo Gopass">
 </div>
 """, unsafe_allow_html=True)
-# Configuración de la página
-st.set_page_config(page_title="Entrega de Turno", layout="centered")
 
 # Título principal
 st.title("📋 Plantilla de Informe de Entrega de Cambio de Turno")
+
+# CSS personalizado para normalizar estilos
+st.markdown("""
+<style>
+    /* Normalizar todos los campos de entrada */
+    .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox select {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus, .stSelectbox select:focus {
+        border-color: #1f77b4;
+        box-shadow: 0 0 0 2px rgba(31, 119, 180, 0.2);
+    }
+    
+    /* Botones consistentes */
+    .stButton button {
+        width: 100%;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Formularios consistentes */
+    .stForm {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 25px;
+        background-color: #fafafa;
+        margin-bottom: 20px;
+    }
+    
+    /* Radio buttons y multiselect consistentes */
+    .stRadio > div {
+        flex-direction: row;
+        gap: 20px;
+    }
+    
+    .stRadio label {
+        margin-right: 20px;
+    }
+    
+    .stMultiSelect > div > div {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+    }
+    
+    /* Info boxes consistentes */
+    .stAlert {
+        border-radius: 8px;
+        padding: 15px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Inicializar session state
 if 'paso' not in st.session_state:
@@ -40,6 +102,8 @@ if 'novedades' not in st.session_state:
     st.session_state.novedades = ""
 if 'tiene_pendientes' not in st.session_state:
     st.session_state.tiene_pendientes = "No"
+if 'desc_pendientes' not in st.session_state:
+    st.session_state.desc_pendientes = ""
 if 'actividad_actual_index' not in st.session_state:
     st.session_state.actividad_actual_index = 0
 if 'datos_guardados' not in st.session_state:
@@ -50,6 +114,10 @@ if 'correos_por_concesion' not in st.session_state:
     st.session_state.correos_por_concesion = {}
 if 'tiene_novedades_conc' not in st.session_state:
     st.session_state.tiene_novedades_conc = "No"
+if 'desc_novedades_conc' not in st.session_state:
+    st.session_state.desc_novedades_conc = ""
+if 'analisis_dia' not in st.session_state:
+    st.session_state.analisis_dia = ""
 
 # Función para guardar datos
 def guardar_datos(datos):
@@ -64,16 +132,6 @@ def guardar_datos(datos):
 def ir_siguiente_actividad():
     st.session_state.actividad_actual_index += 1
     
-    # Limpiar datos de la actividad anterior
-    st.session_state.categorias_seleccionadas = []
-    st.session_state.tickets_por_categoria = {}
-    st.session_state.escalados = ""
-    st.session_state.novedades = ""
-    st.session_state.tiene_pendientes = "No"
-    st.session_state.concesiones_seleccionadas = []
-    st.session_state.correos_por_concesion = {}
-    st.session_state.tiene_novedades_conc = "No"
-    
     if st.session_state.actividad_actual_index < len(st.session_state.actividades):
         siguiente_actividad = st.session_state.actividades[st.session_state.actividad_actual_index]
         if siguiente_actividad == "Tickets GLPI":
@@ -87,7 +145,25 @@ def ir_siguiente_actividad():
     
     st.rerun()
 
-# Función para exportar a GitHub
+# Función para crear botones de navegación consistentes
+def crear_botones_navegacion(anterior_paso, siguiente_paso=None, texto_siguiente="Siguiente ➡️", deshabilitar_siguiente=False):
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Atrás", use_container_width=True, key=f"atras_{st.session_state.paso}"):
+            st.session_state.paso = anterior_paso
+            st.rerun()
+    
+    with col2:
+        if siguiente_paso:
+            if st.button(texto_siguiente, use_container_width=True, disabled=deshabilitar_siguiente, key=f"siguiente_{st.session_state.paso}"):
+                st.session_state.paso = siguiente_paso
+                st.rerun()
+        else:
+            if st.button(texto_siguiente, use_container_width=True, disabled=deshabilitar_siguiente, key=f"enviar_{st.session_state.paso}"):
+                return True
+    return False
+
+# Función para exportar a GitHub (igual que tu versión original)
 def exportar_todo():
     try:
         # Obtener configuración de GitHub desde secrets
@@ -215,9 +291,11 @@ def exportar_todo():
 # PASO 1: Selección de nombre
 if st.session_state.paso == "1":
     with st.form("form_nombre"):
+        st.markdown("### 👤 Identificación")
         nombre = st.selectbox(
             "Seleccione su nombre *",
-            ["", "David Grillo", "Jose Arias", "Cesar Salamanca", "Ruben Palacios"]
+            ["", "David Grillo", "Jose Arias", "Cesar Salamanca", "Ruben Palacios"],
+            key="select_nombre"
         )
         
         submit_nombre = st.form_submit_button("Siguiente ➡️", use_container_width=True)
@@ -235,9 +313,12 @@ elif st.session_state.paso == "2":
     st.info(f"👤 Usuario: **{st.session_state.nombre}**")
     
     with st.form("form_actividades"):
+        st.markdown("### 📋 Selección de Actividades")
         actividades = st.multiselect(
             "¿Qué trabajaste en tu turno? *",
-            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día"]
+            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día"],
+            default=st.session_state.actividades,
+            key="multiselect_actividades"
         )
         
         col1, col2 = st.columns(2)
@@ -299,10 +380,12 @@ elif st.session_state.paso == "3":
     ]
     
     with st.form("form_categorias"):
+        st.markdown("### 🎯 Categorías de Tickets")
         categorias = st.multiselect(
-            "¿Cuáles categorías trabajaste?",
+            "¿Cuáles categorías trabajaste? *",
             categorias_opciones,
-            default=st.session_state.categorias_seleccionadas
+            default=st.session_state.categorias_seleccionadas,
+            key="multiselect_categorias"
         )
         
         col1, col2 = st.columns(2)
@@ -328,12 +411,14 @@ elif st.session_state.paso == "3.1":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_num_tickets"):
-        st.markdown("**Número de tickets resueltos por categoría:**")
+        st.markdown("### 📊 Número de Tickets Resueltos")
+        st.markdown("**Ingresa la cantidad de tickets resueltos por categoría:**")
+        
         tickets_dict = {}
         for cat in st.session_state.categorias_seleccionadas:
             valor_default = st.session_state.tickets_por_categoria.get(cat, 0)
             tickets_dict[cat] = st.number_input(
-                cat,
+                f"Tickets en {cat}",
                 min_value=0,
                 value=valor_default,
                 step=1,
@@ -360,15 +445,19 @@ elif st.session_state.paso == "3.2":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_escalados"):
+        st.markdown("### 🔄 Tickets Escalados y Novedades")
+        
         escalados = st.text_input(
             "¿Cuántos tickets escalaste a otras áreas? (ej: Desarrollo - 5)",
-            value=st.session_state.escalados
+            value=st.session_state.escalados,
+            key="input_escalados"
         )
         
         novedades = st.text_area(
             "¿Tuviste novedades en tickets?",
             value=st.session_state.novedades,
-            height=100
+            height=100,
+            key="area_novedades"
         )
         
         col1, col2 = st.columns(2)
@@ -392,10 +481,13 @@ elif st.session_state.paso == "3.3":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_pendientes"):
+        st.markdown("### 📋 Pendientes para el Siguiente Turno")
+        
         pendientes = st.radio(
-            "¿Dejaste algo pendiente?",
+            "¿Dejaste algo pendiente? *",
             ["No", "Sí"],
-            index=0 if st.session_state.tiene_pendientes == "No" else 1
+            index=0 if st.session_state.tiene_pendientes == "No" else 1,
+            key="radio_pendientes"
         )
         
         col1, col2 = st.columns(2)
@@ -413,17 +505,35 @@ elif st.session_state.paso == "3.3":
             if pendientes == "Sí":
                 st.session_state.paso = "3.4"
             else:
-                st.session_state.paso = "3.5"
-            st.rerun()
+                # Guardar datos sin pendientes
+                datos = {
+                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Nombre": st.session_state.nombre,
+                    "Actividad": "Tickets GLPI",
+                    "Categorías": ", ".join(st.session_state.categorias_seleccionadas),
+                    "Tickets Escalados": st.session_state.escalados,
+                    "Novedades": st.session_state.novedades,
+                    "Pendientes": "No"
+                }
+                
+                for cat, num in st.session_state.tickets_por_categoria.items():
+                    datos[f"Tickets - {cat}"] = num
+                
+                if guardar_datos(datos):
+                    ir_siguiente_actividad()
 
 # PASO 3.4: Descripción de pendientes
 elif st.session_state.paso == "3.4":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 🎫 Tickets GLPI")
     
     with st.form("form_desc_pendientes"):
+        st.markdown("### 📝 Descripción de Pendientes")
+        
         desc_pendientes = st.text_area(
-            "¿Qué dejaste pendiente para el siguiente turno?",
-            height=150
+            "¿Qué dejaste pendiente para el siguiente turno? *",
+            value=st.session_state.desc_pendientes,
+            height=150,
+            key="area_pendientes"
         )
         
         col1, col2 = st.columns(2)
@@ -454,25 +564,8 @@ elif st.session_state.paso == "3.4":
                     datos[f"Tickets - {cat}"] = num
                 
                 if guardar_datos(datos):
+                    st.session_state.desc_pendientes = ""  # Limpiar para siguiente uso
                     ir_siguiente_actividad()
-
-# PASO 3.5: Envío final (sin pendientes)
-elif st.session_state.paso == "3.5":
-    datos = {
-        "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Nombre": st.session_state.nombre,
-        "Actividad": "Tickets GLPI",
-        "Categorías": ", ".join(st.session_state.categorias_seleccionadas),
-        "Tickets Escalados": st.session_state.escalados,
-        "Novedades": st.session_state.novedades,
-        "Pendientes": "No"
-    }
-    
-    for cat, num in st.session_state.tickets_por_categoria.items():
-        datos[f"Tickets - {cat}"] = num
-    
-    if guardar_datos(datos):
-        ir_siguiente_actividad()
 
 # ========== CORREO DE CONCESIONES ==========
 # PASO 4: Selección de concesiones
@@ -487,10 +580,12 @@ elif st.session_state.paso == "4":
     ]
     
     with st.form("form_concesiones_select"):
+        st.markdown("### 🏢 Concesiones Trabajadas")
         concesiones = st.multiselect(
-            "¿Qué concesiones trabajaste?",
+            "¿Qué concesiones trabajaste? *",
             concesiones_opciones,
-            default=st.session_state.concesiones_seleccionadas
+            default=st.session_state.concesiones_seleccionadas,
+            key="multiselect_concesiones"
         )
         
         col1, col2 = st.columns(2)
@@ -516,12 +611,14 @@ elif st.session_state.paso == "4.1":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
     
     with st.form("form_num_correos"):
-        st.markdown("**Número de correos respondidos por concesión:**")
+        st.markdown("### 📧 Correos Respondidos por Concesión")
+        st.markdown("**Ingresa la cantidad de correos respondidos por concesión:**")
+        
         correos_dict = {}
         for conc in st.session_state.concesiones_seleccionadas:
             valor_default = st.session_state.correos_por_concesion.get(conc, 0)
             correos_dict[conc] = st.number_input(
-                conc,
+                f"Correos en {conc}",
                 min_value=0,
                 value=valor_default,
                 step=1,
@@ -548,10 +645,13 @@ elif st.session_state.paso == "4.2":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
     
     with st.form("form_novedades_conc"):
+        st.markdown("### 📋 Novedades en Concesiones")
+        
         tuvo_novedades = st.radio(
-            "¿Tuviste novedades?",
+            "¿Tuviste novedades? *",
             ["No", "Sí"],
-            index=0 if st.session_state.tiene_novedades_conc == "No" else 1
+            index=0 if st.session_state.tiene_novedades_conc == "No" else 1,
+            key="radio_novedades_conc"
         )
         
         col1, col2 = st.columns(2)
@@ -569,17 +669,33 @@ elif st.session_state.paso == "4.2":
             if tuvo_novedades == "Sí":
                 st.session_state.paso = "4.3"
             else:
-                st.session_state.paso = "4.4"
-            st.rerun()
+                # Guardar datos sin novedades
+                datos = {
+                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Nombre": st.session_state.nombre,
+                    "Actividad": "Correo de Concesiones",
+                    "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
+                    "Novedades": "No"
+                }
+                
+                for conc, num in st.session_state.correos_por_concesion.items():
+                    datos[f"Correos - {conc}"] = num
+                
+                if guardar_datos(datos):
+                    ir_siguiente_actividad()
 
 # PASO 4.3: Descripción de novedades
 elif st.session_state.paso == "4.3":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Correo de Concesiones")
     
     with st.form("form_desc_novedades_conc"):
+        st.markdown("### 📝 Descripción de Novedades")
+        
         desc_novedades = st.text_area(
-            "¿Qué novedades tuviste?",
-            height=150
+            "¿Qué novedades tuviste? *",
+            value=st.session_state.desc_novedades_conc,
+            height=150,
+            key="area_novedades_conc"
         )
         
         col1, col2 = st.columns(2)
@@ -608,23 +724,8 @@ elif st.session_state.paso == "4.3":
                     datos[f"Correos - {conc}"] = num
                 
                 if guardar_datos(datos):
+                    st.session_state.desc_novedades_conc = ""  # Limpiar para siguiente uso
                     ir_siguiente_actividad()
-
-# PASO 4.4: Envío final (sin novedades)
-elif st.session_state.paso == "4.4":
-    datos = {
-        "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Nombre": st.session_state.nombre,
-        "Actividad": "Correo de Concesiones",
-        "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
-        "Novedades": "No"
-    }
-    
-    for conc, num in st.session_state.correos_por_concesion.items():
-        datos[f"Correos - {conc}"] = num
-    
-    if guardar_datos(datos):
-        ir_siguiente_actividad()
 
 # ========== ANÁLISIS DEL DÍA ==========
 # PASO 5: Análisis del día
@@ -632,9 +733,13 @@ elif st.session_state.paso == "5":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📊 Análisis del Día")
     
     with st.form("form_analisis"):
+        st.markdown("### 📈 Análisis del Día")
+        
         analisis = st.text_area(
-            "Describe el análisis del día:",
-            height=200
+            "Describe el análisis del día: *",
+            value=st.session_state.analisis_dia,
+            height=200,
+            key="area_analisis"
         )
         
         col1, col2 = st.columns(2)
@@ -659,6 +764,7 @@ elif st.session_state.paso == "5":
                 }
                 
                 if guardar_datos(datos):
+                    st.session_state.analisis_dia = ""  # Limpiar para siguiente uso
                     ir_siguiente_actividad()
 
 # ========== FINALIZACIÓN ==========
@@ -671,19 +777,9 @@ elif st.session_state.paso == "99":
         st.balloons()
         
         if st.button("🔄 Hacer otro envío", use_container_width=True):
-            st.session_state.paso = "1"
-            st.session_state.nombre = ""
-            st.session_state.actividades = []
-            st.session_state.actividad_actual_index = 0
-            st.session_state.datos_guardados = []
-            st.session_state.categorias_seleccionadas = []
-            st.session_state.tickets_por_categoria = {}
-            st.session_state.escalados = ""
-            st.session_state.novedades = ""
-            st.session_state.tiene_pendientes = "No"
-            st.session_state.concesiones_seleccionadas = []
-            st.session_state.correos_por_concesion = {}
-            st.session_state.tiene_novedades_conc = "No"
+            # Resetear todos los estados
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.rerun()
 
 # Footer
