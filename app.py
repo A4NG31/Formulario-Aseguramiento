@@ -5,6 +5,7 @@ from io import BytesIO
 import requests
 import json
 import base64
+import pytz  # Necesitarás instalar esta librería
 
 # Configuración de la página (debe ir al principio)
 st.set_page_config(page_title="Cambio de Turno", page_icon="📋", layout="wide")
@@ -85,6 +86,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Función para obtener la hora actual de Colombia
+def obtener_hora_colombia():
+    try:
+        # Zona horaria de Colombia (Bogotá)
+        zona_colombia = pytz.timezone('America/Bogota')
+        hora_actual = datetime.now(zona_colombia)
+        return hora_actual.strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        # Fallback en caso de error
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 # Inicializar session state
 if 'paso' not in st.session_state:
     st.session_state.paso = "1"
@@ -145,25 +157,7 @@ def ir_siguiente_actividad():
     
     st.rerun()
 
-# Función para crear botones de navegación consistentes
-def crear_botones_navegacion(anterior_paso, siguiente_paso=None, texto_siguiente="Siguiente ➡️", deshabilitar_siguiente=False):
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ Atrás", use_container_width=True, key=f"atras_{st.session_state.paso}"):
-            st.session_state.paso = anterior_paso
-            st.rerun()
-    
-    with col2:
-        if siguiente_paso:
-            if st.button(texto_siguiente, use_container_width=True, disabled=deshabilitar_siguiente, key=f"siguiente_{st.session_state.paso}"):
-                st.session_state.paso = siguiente_paso
-                st.rerun()
-        else:
-            if st.button(texto_siguiente, use_container_width=True, disabled=deshabilitar_siguiente, key=f"enviar_{st.session_state.paso}"):
-                return True
-    return False
-
-# Función para exportar a GitHub (igual que tu versión original)
+# Función para exportar a GitHub
 def exportar_todo():
     try:
         # Obtener configuración de GitHub desde secrets
@@ -215,7 +209,7 @@ def exportar_todo():
         content_base64 = base64.b64encode(output.read()).decode('utf-8')
         
         # Preparar payload para GitHub
-        commit_message = f"Actualización de entregas - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        commit_message = f"Actualización de entregas - {obtener_hora_colombia()}"
         
         payload = {
             "message": commit_message,
@@ -236,7 +230,7 @@ def exportar_todo():
             st.markdown(f"🔗 [Ver archivo en GitHub]({file_url})")
             
             # Ofrecer descarga local también
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = obtener_hora_colombia().replace(":", "").replace(" ", "_").replace("-", "")
             nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
             
             output.seek(0)
@@ -266,7 +260,7 @@ def exportar_todo():
         
         # Fallback: guardar localmente
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = obtener_hora_colombia().replace(":", "").replace(" ", "_").replace("-", "")
             nombre_archivo = f"entrega_turno_{timestamp}.xlsx"
             
             df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
@@ -507,7 +501,7 @@ elif st.session_state.paso == "3.3":
             else:
                 # Guardar datos sin pendientes
                 datos = {
-                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Fecha y Hora": obtener_hora_colombia(),
                     "Nombre": st.session_state.nombre,
                     "Actividad": "Tickets GLPI",
                     "Categorías": ", ".join(st.session_state.categorias_seleccionadas),
@@ -551,7 +545,7 @@ elif st.session_state.paso == "3.4":
                 st.error("⚠️ Por favor describe lo que dejaste pendiente")
             else:
                 datos = {
-                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Fecha y Hora": obtener_hora_colombia(),
                     "Nombre": st.session_state.nombre,
                     "Actividad": "Tickets GLPI",
                     "Categorías": ", ".join(st.session_state.categorias_seleccionadas),
@@ -671,7 +665,7 @@ elif st.session_state.paso == "4.2":
             else:
                 # Guardar datos sin novedades
                 datos = {
-                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Fecha y Hora": obtener_hora_colombia(),
                     "Nombre": st.session_state.nombre,
                     "Actividad": "Correo de Concesiones",
                     "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
@@ -713,7 +707,7 @@ elif st.session_state.paso == "4.3":
                 st.error("⚠️ Por favor describe las novedades")
             else:
                 datos = {
-                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Fecha y Hora": obtener_hora_colombia(),
                     "Nombre": st.session_state.nombre,
                     "Actividad": "Correo de Concesiones",
                     "Concesiones": ", ".join(st.session_state.concesiones_seleccionadas),
@@ -757,7 +751,7 @@ elif st.session_state.paso == "5":
                 st.error("⚠️ Por favor describe el análisis del día")
             else:
                 datos = {
-                    "Fecha y Hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Fecha y Hora": obtener_hora_colombia(),
                     "Nombre": st.session_state.nombre,
                     "Actividad": "Análisis del Día",
                     "Análisis": analisis
