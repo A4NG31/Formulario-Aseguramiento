@@ -920,7 +920,7 @@ elif st.session_state.paso == "6":
     with st.form("form_parqueaderos_select"):
         st.markdown("### 🏢 Conciliaciones Trabajadas")
         parqueaderos = st.multiselect(
-            "¿Qué concesiones trabajaste? *",
+            "¿Qué conciliaciones trabajaste? *",
             parqueaderos_opciones,
             default=st.session_state.parqueaderos_seleccionadas,
             key="multiselect_parqueaderos"
