@@ -953,7 +953,7 @@ elif st.session_state.paso == "6.1":
         st.markdown("**Ingresa la cantidad de correos respondidos por parqueadero:**")
         
         correos_dict_p = {}
-        for conc in st.session_state.parqueadero_seleccionadas:
+        for conc in st.session_state.parqueaderos_seleccionadas:
             valor_default = st.session_state.correos_por_parqueadero.get(conc, 0)
             correos_dict_p[conc] = st.number_input(
                 f"Correos en {conc}",
