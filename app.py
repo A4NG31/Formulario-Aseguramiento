@@ -1047,7 +1047,7 @@ elif st.session_state.paso == "6.3":
             st.rerun()
         
         if enviar:
-            if not desc_novedades.strip():
+            if not desc_novedades_p.strip():
                 st.error("⚠️ Por favor describe las novedades")
             else:
                 datos = {
