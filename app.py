@@ -1234,37 +1234,37 @@ elif st.session_state.paso == "7":
     with st.form("form_analisis_alertas"):
             st.markdown("### 📈 Gestión de alertas")
             
-            gestion = st.text_area(
-                "Describe tu gestión de alertas: *",
-                value=st.session_state.analisis_alertas,
-                height=200,
-                key="alertas_analisis"
-            )
+        gestion = st.text_area(
+                    "Describe tu gestión de alertas: *",
+                    value=st.session_state.analisis_alertas,
+                    height=200,
+                    key="alertas_analisis"
+                )         
             
-            col1, col2 = st.columns(2)
-            with col1:
-                atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
-            with col2:
-                enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
-            
-            if atras:
-                st.session_state.paso = "2"
-                st.rerun()
-            
-            if enviar:
-                if not analisis.strip():
-                    st.error("⚠️ Por favor describe el análisis del día")
-                else:
-                    datos = {
-                        "Fecha y Hora": obtener_hora_colombia(),
-                        "Nombre": st.session_state.nombre,
-                        "Actividad": "Gestión de Alertas",
-                        "Gestion": gestion
-                    }
-                    
-                    if guardar_datos(datos):
-                        st.session_state.analisis_alertas = ""  # Limpiar para siguiente uso
-                        ir_siguiente_actividad()   
+        col1, col2 = st.columns(2)
+        with col1:
+                    atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+                with col2:
+                    enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
+                
+                if atras:
+                    st.session_state.paso = "2"
+                    st.rerun()
+                
+                if enviar:
+                    if not analisis.strip():
+                        st.error("⚠️ Por favor describe el análisis del día")
+                    else:
+                        datos = {
+                            "Fecha y Hora": obtener_hora_colombia(),
+                            "Nombre": st.session_state.nombre,
+                            "Actividad": "Gestión de Alertas",
+                            "Gestion": gestion
+                        }
+                        
+                        if guardar_datos(datos):
+                            st.session_state.analisis_alertas = ""  # Limpiar para siguiente uso
+                            ir_siguiente_actividad()            
  
 
 # ========== FINALIZACIÓN ==========
