@@ -130,6 +130,14 @@ if 'desc_novedades_conc' not in st.session_state:
     st.session_state.desc_novedades_conc = ""
 if 'analisis_dia' not in st.session_state:
     st.session_state.analisis_dia = ""
+if 'parqueaderos_seleccionadas' not in st.session_state:
+    st.session_state.parqueaderos_seleccionadas = []
+if 'correos_por_parqueadero' not in st.session_state:
+    st.session_state.correos_por_parqueadero = {}
+if 'tiene_novedades_p_conc' not in st.session_state:
+    st.session_state.tiene_novedades_p_conc = "No"
+if 'desc_novedades_p_conc' not in st.session_state:
+    st.session_state.desc_novedades_p_conc = ""
 
 # Función para guardar datos
 def guardar_datos(datos):
