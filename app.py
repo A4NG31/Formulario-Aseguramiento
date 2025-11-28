@@ -1228,8 +1228,7 @@ elif st.session_state.paso == "6.3":
 
  # ========== ANÁLISIS DEL DÍA ==========
  # PASO 7: Gestion de alertas
-
- elif st.session_state.paso == "7":
+elif st.session_state.paso == "7":
         st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📊 Gestion de alertas")
         
         with st.form("form_analisis"):
@@ -1266,6 +1265,7 @@ elif st.session_state.paso == "6.3":
                     if guardar_datos(datos):
                         st.session_state.analisis_alertas = ""  # Limpiar para siguiente uso
                         ir_siguiente_actividad()   
+ 
 
 # ========== FINALIZACIÓN ==========
 # PASO 99: Exportación final
