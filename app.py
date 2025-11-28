@@ -138,6 +138,8 @@ if 'tiene_novedades_p_conc' not in st.session_state:
     st.session_state.tiene_novedades_p_conc = "No"
 if 'desc_novedades_p_conc' not in st.session_state:
     st.session_state.desc_novedades_p_conc = ""
+if 'analisis_alertas' not in st.session_state:
+    st.session_state.analisis_dia = ""
 
 # Función para guardar datos
 def guardar_datos(datos):
@@ -162,6 +164,8 @@ def ir_siguiente_actividad():
             st.session_state.paso = "5"
         elif siguiente_actividad == "Conciliaciones parqueaderos":
             st.session_state.paso = "6"
+        elif siguiente_actividad == "Gestion de alertas":
+            st.session_state.paso = "7"
     else:
         st.session_state.paso = "99"
     
@@ -367,7 +371,7 @@ elif st.session_state.paso == "2":
         st.markdown("### 📋 Selección de Actividades")
         actividades = st.multiselect(
             "¿Qué trabajaste en tu turno? *",
-            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día", "Conciliaciones parqueaderos"],
+            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día", "Conciliaciones parqueaderos", "Gestion de alertas"],
             default=st.session_state.actividades,
             key="multiselect_actividades"
         )
@@ -397,6 +401,9 @@ elif st.session_state.paso == "2":
                     st.session_state.paso = "5"
                 elif primera_actividad == "Conciliaciones parqueaderos":
                     st.session_state.paso = "6"
+                elif primera_actividad == "Gestion de alertas":
+                    st.session_state.paso = "7"
+
                 st.rerun()
 
 # ========== TICKETS GLPI ==========
@@ -1175,7 +1182,7 @@ elif st.session_state.paso == "6.2":
                 if guardar_datos(datos):
                     ir_siguiente_actividad()
 
-# PASO 4.3: Descripción de novedades
+# PASO 6.3: Descripción de novedades
 elif st.session_state.paso == "6.3":
     st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Conciliaciones parqueaderos")
     
@@ -1217,6 +1224,47 @@ elif st.session_state.paso == "6.3":
                 if guardar_datos(datos):
                     st.session_state.desc_novedades_p_conc = ""  # Limpiar para siguiente uso
                     ir_siguiente_actividad()
+
+
+    # ========== ANÁLISIS DEL DÍA ==========
+    # PASO 7: Gestion de alertas
+    elif st.session_state.paso == "7":
+        st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📊 Gestion de alertas")
+        
+        with st.form("form_analisis"):
+            st.markdown("### 📈 Gestión de alertas")
+            
+            gestion = st.text_area(
+                "Describe tu gestión de alertas: *",
+                value=st.session_state.analisis_alertas,
+                height=200,
+                key="alertas_analisis"
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+            with col2:
+                enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
+            
+            if atras:
+                st.session_state.paso = "2"
+                st.rerun()
+            
+            if enviar:
+                if not analisis.strip():
+                    st.error("⚠️ Por favor describe el análisis del día")
+                else:
+                    datos = {
+                        "Fecha y Hora": obtener_hora_colombia(),
+                        "Nombre": st.session_state.nombre,
+                        "Actividad": "Gestión de Alertas",
+                        "Gestion": gestion
+                    }
+                    
+                    if guardar_datos(datos):
+                        st.session_state.analisis_alertas = ""  # Limpiar para siguiente uso
+                        ir_siguiente_actividad()
 
 # ========== FINALIZACIÓN ==========
 # PASO 99: Exportación final
