@@ -152,6 +152,8 @@ def ir_siguiente_actividad():
             st.session_state.paso = "4"
         elif siguiente_actividad == "Análisis del día":
             st.session_state.paso = "5"
+        elif siguiente_actividad == "Conciliaciones parqueaderos":
+            st.session_state.paso = "6"
     else:
         st.session_state.paso = "99"
     
@@ -848,6 +850,209 @@ elif st.session_state.paso == "5":
                 
                 if guardar_datos(datos):
                     st.session_state.analisis_dia = ""  # Limpiar para siguiente uso
+                    ir_siguiente_actividad()
+
+
+# ========== conciliaciones parqueaderos ==========
+# PASO 4: Selección de parqueaderos
+elif st.session_state.paso == "6":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Conciliaciones parqueaderos")
+    
+    parqueaderos_opciones = [
+        "Accenorte",
+        "Alt. Viales",
+        "Alma",
+        "Aut. El Cafe",
+        "App Gica",
+        "Aut. Del Caribe",
+        "Aut. Rio Grande",
+        "Aut. Rio Magda",
+        "Alca. Envigado",
+        "Aut. Nordeste",
+        "Autovia BTS",
+        "Aut. Neiva–Girar",
+        "Panamericana",
+        "Coviiandina",
+        "Covioriente",
+        "Covipacifico",
+        "Devimar",
+        "Devimed",
+        "Devisab",
+        "Findeter",
+        "La Pintada",
+        "Pacifico Tres",
+        "Peajes Nacionales",
+        "Peri. Del Oriente",
+        "Concesión Pisa",
+        "Ruta Al Mar",
+        "Ruta Al Sur",
+        "Ruta Costera C-B",
+        "Ruta Del Cacao",
+        "R. Magdalena S.M",
+        "Ruta Del Valle",
+        "Saba. De Occidente",
+        "Ruta Portuaria",
+        "Tunel Aburra Or.",
+        "U.V Camino Del P.",
+        "Via 40 Express",
+        "Vial De Los Llanos",
+        "Transv. Sigsa",
+        "Montes De Maria",
+        "Rio Pamplonita",
+        "Union Del Sur",
+        "Vias Del Nus",
+        "Yuma",
+        "ICCU",
+        "Aut. Urabá",
+        "Aut. Magda Medio"
+    ]
+
+    with st.form("form_parqueaderos_select"):
+        st.markdown("### 🏢 Conciliaciones Trabajadas")
+        parqueaderos = st.multiselect(
+            "¿Qué concesiones trabajaste? *",
+            parqueaderos_opciones,
+            default=st.session_state.parqueaderos_seleccionadas,
+            key="multiselect_parqueaderos"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "2"
+            st.rerun()
+        
+        if siguiente:
+            if not parqueaderos:
+                st.error("⚠️ Selecciona al menos un parqueadero")
+            else:
+                st.session_state.parqueaderos_seleccionadas = parqueaderos
+                st.session_state.paso = "6.1"
+                st.rerun()
+
+# PASO 4.1: Número de correos por parqueadero
+elif st.session_state.paso == "6.1":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Conciliaciones parqueaderos")
+    
+    with st.form("form_num_correos"):
+        st.markdown("### 📧 Correos Respondidos por Parqueadero")
+        st.markdown("**Ingresa la cantidad de correos respondidos por parqueadero:**")
+        
+        correos_dict_p = {}
+        for conc in st.session_state.parqueadero_seleccionadas:
+            valor_default = st.session_state.correos_por_parqueadero.get(conc, 0)
+            correos_dict_p[conc] = st.number_input(
+                f"Correos en {conc}",
+                min_value=0,
+                value=valor_default,
+                step=1,
+                key=f"correo_{conc}"
+            )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "6"
+            st.rerun()
+        
+        if siguiente:
+            st.session_state.correos_por_parqueadero = correos_dict_p
+            st.session_state.paso = "6.2"
+            st.rerun()
+
+# PASO 6.2: ¿Tuviste novedades?
+elif st.session_state.paso == "6.2":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Conciliaciones parqueaderos")
+    
+    with st.form("form_novedades_conc"):
+        st.markdown("### 📋 Novedades en Conciliaciones de parqueaderos")
+        
+        tuvo_novedades_p = st.radio(
+            "¿Tuviste novedades? *",
+            ["No", "Sí"],
+            index=0 if st.session_state.tiene_novedades_p_conc == "No" else 1,
+            key="radio_novedades_p_conc"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            siguiente = st.form_submit_button("Siguiente ➡️", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "6.1"
+            st.rerun()
+        
+        if siguiente:
+            st.session_state.tiene_novedades_p_conc = tuvo_novedades_p
+            if tuvo_novedades_p == "Sí":
+                st.session_state.paso = "6.3"
+            else:
+                # Guardar datos sin novedades
+                datos = {
+                    "Fecha y Hora": obtener_hora_colombia(),
+                    "Nombre": st.session_state.nombre,
+                    "Actividad": "Correo de Concesiones",
+                    "Parqueaderos": ", ".join(st.session_state.parqueaderos_seleccionadas),
+                    "Novedades": "No"
+                }
+                
+                for conc, num in st.session_state.correos_por_parqueadero.items():
+                    datos[f"Correos - {conc}"] = num
+                
+                if guardar_datos(datos):
+                    ir_siguiente_actividad()
+
+# PASO 4.3: Descripción de novedades
+elif st.session_state.paso == "6.3":
+    st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📧 Conciliaciones parqueaderos")
+    
+    with st.form("form_desc_novedades_p_conc"):
+        st.markdown("### 📝 Descripción de Novedades")
+        
+        desc_novedades_p = st.text_area(
+            "¿Qué novedades tuviste? *",
+            value=st.session_state.desc_novedades_p_conc,
+            height=150,
+            key="area_novedades_p_conc"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            atras = st.form_submit_button("⬅️ Atrás", use_container_width=True)
+        with col2:
+            enviar = st.form_submit_button("📤 Enviar", use_container_width=True)
+        
+        if atras:
+            st.session_state.paso = "6.2"
+            st.rerun()
+        
+        if enviar:
+            if not desc_novedades.strip():
+                st.error("⚠️ Por favor describe las novedades")
+            else:
+                datos = {
+                    "Fecha y Hora": obtener_hora_colombia(),
+                    "Nombre": st.session_state.nombre,
+                    "Actividad": "Correo de Concesiones",
+                    "Parqueaderos": ", ".join(st.session_state.parqueaderos_seleccionadas),
+                    "Novedades": desc_novedades_p
+                }
+                
+                for conc, num in st.session_state.correos_por_parqueadero.items():
+                    datos[f"Correos - {conc}"] = num
+                
+                if guardar_datos(datos):
+                    st.session_state.desc_novedades_p_conc = ""  # Limpiar para siguiente uso
                     ir_siguiente_actividad()
 
 # ========== FINALIZACIÓN ==========
