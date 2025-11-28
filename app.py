@@ -1231,7 +1231,7 @@ elif st.session_state.paso == "6.3":
 elif st.session_state.paso == "7":
         st.info(f"👤 Usuario: **{st.session_state.nombre}** | 📊 Gestion de alertas")
         
-        with st.form("form_analisis"):
+    with st.form("form_analisis"):
             st.markdown("### 📈 Gestión de alertas")
             
             gestion = st.text_area(
