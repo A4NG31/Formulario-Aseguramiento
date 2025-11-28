@@ -186,9 +186,56 @@ def exportar_todo():
             existing_content = base64.b64decode(file_data["content"])
             existing_df = pd.read_excel(BytesIO(existing_content))
             
-            # Agregar nuevos datos
+            # Crear DataFrame con nuevos datos
             df_nuevos = pd.DataFrame(st.session_state.datos_guardados)
-            df_completo = pd.concat([existing_df, df_nuevos], ignore_index=True)
+            
+            # FILTRAR DUPLICADOS EXACTOS: Comparar TODOS los campos incluyendo "Fecha y Hora"
+            registros_unicos = []
+            registros_duplicados = 0
+            
+            for idx, nuevo_registro in df_nuevos.iterrows():
+                # Verificar si el registro ya existe en existing_df (comparación completa)
+                es_duplicado = False
+                
+                if not existing_df.empty:
+                    for _, registro_existente in existing_df.iterrows():
+                        # Comparar TODOS los campos (incluyendo Fecha y Hora)
+                        campos_iguales = True
+                        
+                        for col in df_nuevos.columns:
+                            valor_nuevo = nuevo_registro.get(col, "")
+                            valor_existente = registro_existente.get(col, "")
+                            
+                            # Comparar como strings para evitar problemas con tipos de datos
+                            if str(valor_nuevo) != str(valor_existente):
+                                campos_iguales = False
+                                break
+                        
+                        if campos_iguales:
+                            es_duplicado = True
+                            break
+                
+                if not es_duplicado:
+                    registros_unicos.append(nuevo_registro)
+                else:
+                    registros_duplicados += 1
+            
+            # Si todos los registros son duplicados, informar y no actualizar
+            if len(registros_unicos) == 0:
+                st.warning(f"⚠️ No se guardaron datos: {registros_duplicados} registro(s) duplicado(s) detectado(s)")
+                st.info("💡 Este registro ya fue enviado anteriormente (mismo usuario, fecha, hora y datos)")
+                return False
+            
+            # Crear DataFrame solo con registros únicos
+            df_nuevos_unicos = pd.DataFrame(registros_unicos)
+            
+            # Concatenar con los datos existentes
+            df_completo = pd.concat([existing_df, df_nuevos_unicos], ignore_index=True)
+            
+            # Mostrar información de duplicados si los hay
+            if registros_duplicados > 0:
+                st.warning(f"⚠️ Se omitieron {registros_duplicados} registro(s) duplicado(s)")
+                st.success(f"✅ Se guardaron {len(registros_unicos)} registro(s) nuevo(s)")
             
         elif response.status_code == 404:
             # Archivo no existe, crear nuevo
@@ -244,7 +291,7 @@ def exportar_todo():
             
             # Mostrar resumen
             st.markdown("### 📊 Resumen de datos guardados:")
-            st.dataframe(df_nuevos, use_container_width=True)
+            st.dataframe(df_nuevos_unicos if 'df_nuevos_unicos' in locals() else df_nuevos, use_container_width=True)
             
             return True
         else:
