@@ -20,7 +20,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Título principal
-st.title("📋 Plantilla de Informe de Entrega de Cambio de Turno")
+st.title("📋 Informe de Entrega de Cambio de Turno")
 
 # CSS personalizado para normalizar estilos
 st.markdown("""
@@ -359,7 +359,7 @@ elif st.session_state.paso == "2":
         st.markdown("### 📋 Selección de Actividades")
         actividades = st.multiselect(
             "¿Qué trabajaste en tu turno? *",
-            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día"],
+            ["Tickets GLPI", "Correo de Concesiones", "Análisis del día", "Conciliaciones parqueaderos"],
             default=st.session_state.actividades,
             key="multiselect_actividades"
         )
