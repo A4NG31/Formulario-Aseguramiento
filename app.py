@@ -342,7 +342,7 @@ def exportar_todo():
 # PASO 1: Selección de nombre
 if st.session_state.paso == "1":
     with st.form("form_nombre"):
-        st.markdown("### 👤 Identificación")
+        st.markdown("### 👤 Analista de Aseguramiento")
         nombre = st.selectbox(
             "Seleccione su nombre *",
             ["", "David Grillo", "Jose Arias", "Cesar Salamanca", "Ruben Palacios"],
@@ -395,6 +395,8 @@ elif st.session_state.paso == "2":
                     st.session_state.paso = "4"
                 elif primera_actividad == "Análisis del día":
                     st.session_state.paso = "5"
+                elif primera_actividad == "Conciliaciones parqueaderos":
+                    st.session_state.paso = "6"
                 st.rerun()
 
 # ========== TICKETS GLPI ==========
