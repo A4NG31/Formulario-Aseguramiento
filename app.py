@@ -428,6 +428,7 @@ elif st.session_state.paso == "3":
         "Aclaración correcto",
         "Uso del Servicio Gopass",
         "Novedad en Transacciones",
+        "B2B",
         "Inconsistencia en Mensualidad",
         "Revisión Inhibición"
     ]
